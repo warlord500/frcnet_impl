@@ -8,7 +8,10 @@ extern "C" fn start_thread(team_id: i32) {
 
 }
 struct frcNetImpl {
-    lastDynamicControlPacket : [Vec<u8>; 32]
+    lastDynamicControlPacket : [Vec<u8>; 32],
+    ctrl :  RobotControl2015
+        //dont use semaphores
+
 }
 
 fn execute_thread(team_id: i32) {
@@ -30,6 +33,9 @@ fn execute_thread(team_id: i32) {
         //read a message and echo it in reverse back
         let (sizeMsg,src) = dsServer.recv_from(&mut buf).unwrap(); 
         if sizeMsg < 0 {println!("read failed");}
+        unsafe{ }
+
+
     }
 
 

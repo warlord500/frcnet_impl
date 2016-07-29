@@ -1,6 +1,7 @@
 use std::thread;
 use std::net::{Ipv4Addr, UdpSocket, TcpListener, TcpStream};
 use std::io::prelude::*;
+use std::mem::cp;
 // const TEAM_ID : i32 = 9999; //default
 extern "C" fn start_thread(team_id: i32) {
     execute_thread(team_id.clone());
@@ -15,6 +16,8 @@ struct frcNetImpl {
 }
 
 fn execute_thread(team_id: i32) {
+    let team_id = team_id; //const param.
+
     // extract the ip of the robot
     let ip = Ipv4Addr::new(10,(team_id/100) as u8,(team_id % 100) as u8,0);
     let port = 1110;
@@ -33,7 +36,9 @@ fn execute_thread(team_id: i32) {
         //read a message and echo it in reverse back
         let (sizeMsg,src) = dsServer.recv_from(&mut buf).unwrap(); 
         if sizeMsg < 0 {println!("read failed");}
-        unsafe{ }
+       //packet is this data  I am pretty sure  I could do.
+         let dataPacket : commonControlData2015 =  unsafe { mem::transmute_copy(&buf)}; 
+
 
 
     }

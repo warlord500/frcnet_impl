@@ -1,5 +1,5 @@
 ///this the receive packet format
-#[repr(c)]
+#[repr(C)]
 pub struct commonControlData2015 {
      packetIndex : u8,
      unknown : u8,
@@ -8,19 +8,16 @@ pub struct commonControlData2015 {
      joysticks : [joystickData; 4],
     dynamicSize : u8
 }
-pub struct dynaChunk {
-    id : u8,
-    data : vec<u8>,
-}
 impl ControlData2015 {
-    pub fn generatePacket(){
-
+    pub fn generatePacket() -> self{
+        
 
     }
+    pub fn blankPack() -> self {}
 }
 
 // send packet format
-#[repr(c)]
+#[repr(C)]
 struct RobotControl2015 {
     packetIndex : u8,
     unknown : u8,
@@ -30,7 +27,7 @@ struct RobotControl2015 {
     voltage_lesser : u8
 }
 
-#[repr(c)]
+#[repr(C)]
 enum  EmbeddeedDynamicChunk {
     UsersDataHigh,
     Errors,
@@ -39,7 +36,7 @@ enum  EmbeddeedDynamicChunk {
 }
 mod implt {
     //dont reorder 
-    #[repr(c)]
+    #[repr(C)]
     enum Modes{ 
         Dtele, 
         Dtest,
@@ -49,7 +46,7 @@ mod implt {
         EAuto
     }
 
-    #[repr(c)]
+    #[repr(C)]
     struct joystickData {
       joystick_size : u8,
       pov_up_to_size : u8,

@@ -10,21 +10,32 @@ mod crc;
 /// this library is designed to be use concepts  that can easily be translated to c++
 /// if neccessary.
 extern "C" fn start_thread(team_id: i32) {
-    let threadInfo = frcNetImpl {};
+        
+
+    
     threadInfo.execute_thread(team_id.clone());
     println!("start_thread")
 
 }
 struct frcNetImpl {
-    lastDynamicControlPacket : [Vec<u8>; 32],
+    lastDynamicPackets : [Vec<u8>; 32],
     ctrl :  RobotControl2015,
-    dynChunks : [dynaChunk; 32]
+    lastDataPacket : controlStructs::commonControlData,
+    
         //dont use semaphores
 
 }
 
 impl frcNetImpl {
-    fn execute_thread(team_id: i32) {
+    fn new() -> self {
+     frcNetImpl {
+        lastDynamicPackets : [Vec::new::<u8>(); 32],
+        ctrl : robotConrtol2015::new(),
+        lastDataPacket : commonControlData::new(),
+     }
+
+    }
+    fn execute_thread(&self,team_id: i32) {
         let team_id = team_id; //const param.
 
         // extract the ip of the robot
@@ -49,24 +60,24 @@ impl frcNetImpl {
            if (sizeMsg < 0) 
            && (sizeMsg == sizeOf::<controlStruct::commonControlData2015>()) {
                println!("read failed or different packet format");
-           } else { 
+        
                //convert data to packet format. 
                let dataPacket : controlStruct::commonControlData2015 = 
                    unsafe { transmute_copy(&buf[0..sizeMsg])}; 
                self.readDynamicData(&mut buf);
                
+
                //create packet for send buffer.
                let sendPacket = commonControlData2015.generate(&mut self);
                let packetSize = sizeOf::<controlStruct::commonControlData2015>();
                sendBuf[0..packetSize].clone_from_slice(unsafe {mem::transmute(sendPacket) });
                
-
-
+               
                 let crc = generateCRC(&mut sendbuffer);
-                
                 sendBuf[packetSize..4].clone_from_slice(unsafe{mem::transmute(crc)});
 
-               dsServer.send(addr, &mut sendBuffer[0..(packetSize+4)]);
+
+               dsServer.send_to(&mut sendBuffer[0..(packetSize+4)],addr);
 
             }
         }
@@ -77,16 +88,16 @@ impl frcNetImpl {
     /// I have no idea why I would send the dynamic chunks as 
     /// is
     fn readDynamicData(&self, buf :&mut [u8]) -> () {
-    let mut curLoc = std::mem::sizeOf::<commonControlData2015>();
-    let mut sizeOfblock = self.lastDataPacket.dynaSize;
-    for packets in self.lastDynamicPackets {
-       *packets.clear(); //empty vector
-       *packets.reserve(sizeOfBlock);
-       *packets.extend_from_slice(buf [curLoc..sizeOfBlock]);
+        let mut curLoc : usize = std::mem::sizeOf::<commonControlData2015>();
+        let mut sizeOfBlock = self.lastDataPacket.dynaSize;
+        for packets in self.lastDynamicPackets.into_iter() {
+           packets.clear(); //empty vector
+           packets.reserve(sizeOfBlock);
+           packets.extend_from_slice(&buf[curLoc..sizeOfBlock]);
 
-       curLoc += sizeOfBlock;
-       sizeOfBlock =  buf[curLoc];
-      }  
+           curLoc += sizeOfBlock;
+           sizeOfBlock =  buf[curLoc];
+        }  
     }
 
     fn addDynamicChunks(&self) -> i32 {/*this is filler function*/ }

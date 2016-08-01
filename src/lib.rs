@@ -2,7 +2,13 @@ use std::thread;
 use std::net::{Ipv4Addr, UdpSocket, TcpListener, TcpStream};
 use std::io::prelude::*;
 use std::mem::cp;
-// const TEAM_ID : i32 = 9999; //default
+use std::mem::sizeOf;
+/// this code is rewrite of frc network communcations
+/// library from Aardvark-Wpilib
+/// this code is written in rust programming
+/// language. it is designed to be  simple and straight forwards as it can be.  
+/// this library is designed to be use concepts  that can easily be translated to c++
+/// if neccessary.
 extern "C" fn start_thread(team_id: i32) {
     execute_thread(team_id.clone());
     println!("start_thread")
@@ -10,7 +16,8 @@ extern "C" fn start_thread(team_id: i32) {
 }
 struct frcNetImpl {
     lastDynamicControlPacket : [Vec<u8>; 32],
-    ctrl :  RobotControl2015
+    ctrl :  RobotControl2015,
+    dynChunks : [dynaChunk; 32]
         //dont use semaphores
 
 }
@@ -32,15 +39,22 @@ fn execute_thread(team_id: i32) {
     robotSocket.set_read_timeout(None);// always blocking
     println!("binded robotSocket");
 
-    while(enabled) {
-        //read a message and echo it in reverse back
-        let (sizeMsg,src) = dsServer.recv_from(&mut buf).unwrap(); 
-        if sizeMsg < 0 {println!("read failed");}
-       //packet is this data  I am pretty sure  I could do.
-         let dataPacket : commonControlData2015 =  unsafe { mem::transmute_copy(&buf)}; 
+    while enabled {
+       //read a message and echo it in reverse back
+       let (sizeMsg,src) = dsServer.recv_from(&mut buf).unwrap(); 
+       if (sizeMsg > 0) && (sizeMsg = std::mem::sizeOf::<commonControlData2015>()) {
+           println!("read failed or different packet format");
+       } else { 
+           //convert data to packet format. 
+           let dataPacket : commonControlData2015 =  unsafe { mem::transmute_copy(&buf)}; 
+           readDynamicData();
+           
+           let sendPacket = commonControlData2015.generate(&mut self.packetIndex);
+           addDynamicChunks(&mut dynChunks,&mut sendBuffer);
 
-
-
+           generateCRC(&mut sendbuffer);
+           dsServer.send(addr, &mut sendBuffer);
+        }
     }
 
 

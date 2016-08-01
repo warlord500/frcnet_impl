@@ -1,17 +1,5 @@
 #[repr(c)]
-struct joystickData {
-  joystick_size : u8,
-  pov_up_to_size : u8,
-  axes_size : u8,
-  axis : [u8; 6], 
-  unkown : u8,
-  button : u8,
-  pov_size : u8,
-  pov : [u8; 2]
-}
-
-#[repr(c)]
-struct commonControlData2015 {
+pub struct ControlData2015 {
      packetIndex : u8,
      unknown : u8,
      state : u8,
@@ -36,12 +24,29 @@ enum  EmbeddeedDynamicChunk {
     DataLow,
     Count
 }
-#[repr(c)]
-enum Modes{ // this cannot be REORDERED  driverStation uses 0 -6 in order for these modes
-    Dtele,
-    Dtest,
-    DAuto,
-    Etele,
-    ETest,
-    EAuto
+mod implt {
+    //dont reorder 
+    #[repr(c)]
+    enum Modes{ 
+        Dtele, 
+        Dtest,
+        DAuto,
+        Etele,
+        ETest,
+        EAuto
+    }
+
+    #[repr(c)]
+    struct joystickData {
+      joystick_size : u8,
+      pov_up_to_size : u8,
+      axes_size : u8,
+      axis : [u8; 6], 
+      unkown : u8,
+      button : u8,
+      pov_size : u8,
+      pov : [u8; 2]
+    }
+
 }
+

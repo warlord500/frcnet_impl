@@ -1,8 +1,12 @@
-extern crate std;
-use std::net::{Ipv4Addr, UdpSocket, TcpListener, TcpStream};
-use std::mem::{sizeOf,transmute_copy,transmute};
 mod controlStructs;
 mod crc;
+
+use std::net::{Ipv4Addr, UdpSocket, TcpListener, TcpStream};
+use std::mem::{sizeOf,transmute_copy,transmute};
+
+use controlStructs::{commonControlData2015,robotControl2015};
+use crc::generateCRC;
+
 /// this code is rewrite of frc network communcations
 /// library from Aardvark-Wpilib
 /// this code is written in rust programming
@@ -18,24 +22,24 @@ extern "C" fn start_thread(team_id: i32) {
 
 }
 struct frcNetImpl {
-    lastDynamicPackets : [Vec<u8>; 32],
+    //lastDynamicPackets : [Vec<u8>; 32],
     ctrl :  RobotControl2015,
     lastDataPacket : controlStructs::commonControlData,
-    
         //dont use semaphores
-
 }
 
 impl frcNetImpl {
-    fn new() -> self {
-     frcNetImpl {
-        lastDynamicPackets : [Vec::new::<u8>(); 32],
-        ctrl : robotConrtol2015::new(),
-        lastDataPacket : commonControlData::new(),
-     }
-
+    fn new() -> Self {
+        frcNetImpl {
+           // lastDynamicPackets : [Vec::new(); 32],
+            ctrl : robotControl2015::new(),
+            lastDataPacket : commonControlData2015::blankPack(),
+         }
     }
-    fn execute_thread(&self,team_id: i32) {
+
+
+    ///this is the main body of the library 
+    fn execute_thread(&self ,team_id: i32) {
         let team_id = team_id; //const param.
 
         // extract the ip of the robot
@@ -43,7 +47,7 @@ impl frcNetImpl {
                 (team_id % 100) as u8,0);
         let port = 1110;
         let mut recvBuf = [0 as u8; 1024];
-        let mut sendBufer = [0 as u8; 2048];
+        let mut sendBuffer = [0 as u8; 2048];
 
     // receive info from driverstations
         let mut dsServer =  UdpSocket::bind((ip,port)).unwrap();
@@ -53,44 +57,44 @@ impl frcNetImpl {
         let mut robotSocket =  UdpSocket::bind((ip,port)).unwrap();
         robotSocket.set_read_timeout(None);// always blocking
         println!("binded robotSocket");
+        let enabled = true;
 
         while enabled {
            //read a message and echo it in reverse back
            let (sizeMsg,src) = dsServer.recv_from(&mut recvBuf).unwrap(); 
            if (sizeMsg < 0) 
-           && (sizeMsg == sizeOf::<controlStruct::commonControlData2015>()) {
+           && (sizeMsg == sizeOf::<controlStructs::commonControlData2015>()) {
                println!("read failed or different packet format");
         
                //convert data to packet format. 
-               let dataPacket : controlStruct::commonControlData2015 = 
-                   unsafe { transmute_copy(&buf[0..sizeMsg])}; 
-               self.readDynamicData(&mut buf);
+               let dataPacket : controlStructs::commonControlData2015 = 
+                   unsafe { transmute_copy(&sendBuffer)}; 
+              // Self.readDynamicData(&mut buf);
                
 
                //create packet for send buffer.
-               let sendPacket = commonControlData2015.generate(&mut self);
-               let packetSize = sizeOf::<controlStruct::commonControlData2015>();
-               sendBuf[0..packetSize].clone_from_slice(unsafe {mem::transmute(sendPacket) });
+               let sendPacket = commonControlData2015::generate(&mut self);
+               let packetSize = sizeOf::<controlStructs::commonControlData2015>();
+               sendBuffer[0..packetSize].clone_from_slice(unsafe {transmute(sendPacket) });
                
                
-                let crc = generateCRC(&mut sendbuffer);
-                sendBuf[packetSize..4].clone_from_slice(unsafe{mem::transmute(crc)});
+                let crc = generateCRC(&mut sendBuffer);
+                sendBuffer[packetSize..4].clone_from_slice(unsafe{transmute(crc)});
 
 
-               dsServer.send_to(&mut sendBuffer[0..(packetSize+4)],addr);
-
+               dsServer.send_to(&mut sendBuffer[0..(packetSize+4)],src);
             }
         }
     }
     ///I am not sure what we do with dynamic data.
-    /// as far as I can tell  we attempt 
+    /// k
     /// read the data into buffers and resend the data
     /// I have no idea why I would send the dynamic chunks as 
     /// is
-    fn readDynamicData(&self, buf :&mut [u8]) -> () {
+ /*   fn readDynamicData(&Self, buf :&mut [u8]) -> () {
         let mut curLoc : usize = std::mem::sizeOf::<commonControlData2015>();
-        let mut sizeOfBlock = self.lastDataPacket.dynaSize;
-        for packets in self.lastDynamicPackets.into_iter() {
+        let mut sizeOfBlock = Self.lastDataPacket.dynaSize;
+        for packets in Self.lastDynamicPackets.into_iter() {
            packets.clear(); //empty vector
            packets.reserve(sizeOfBlock);
            packets.extend_from_slice(&buf[curLoc..sizeOfBlock]);
@@ -98,9 +102,9 @@ impl frcNetImpl {
            curLoc += sizeOfBlock;
            sizeOfBlock =  buf[curLoc];
         }  
-    }
+    } */
 
-    fn addDynamicChunks(&self) -> i32 {/*this is filler function*/ }
+    fn addDynamicChunks(&Self) -> i32 {/*this is filler function*/ }
 
 
 }

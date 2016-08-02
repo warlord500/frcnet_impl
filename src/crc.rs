@@ -1,14 +1,16 @@
+use Self::implt::crc_32_tab;
 fn generateCrc(buf : &[u8]) -> i32 {
     let mut oldcrc : i32 = 0xffffffff;
     for value in buf {
-        oldcrc = implt::crc_32_tab[oldcrc ^ (value as i32)] ^ (oldcrc >> 8);
+        //
+        oldcrc = implt::crc_32_tab[ (oldcrc as usize) ^ (*value as usize) ] ^ (oldcrc >> 8);
     }
    !oldcrc 
 }
 
 mod implt { //hide implementation details from main file 
     //DONT TOUCH THIS TABLE if you want to spend a touch time 
-    const crc_32_tab : [i32; 256] = [ /* CRC polynomial 0xedb88320 */
+   pub const crc_32_tab : [i32; 256] = [ /* CRC polynomial 0xedb88320 */
     0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,
     0xe963a535, 0x9e6495a3, 0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
     0x09b64c2b, 0x7eb17cbd, 0xe7b82d07, 0x90bf1d91, 0x1db71064, 0x6ab020f2,

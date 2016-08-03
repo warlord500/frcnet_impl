@@ -1,16 +1,17 @@
-pub fn generateCRC(buf: &[u8]) -> i32 {
-    let mut oldcrc: i32 = 0xffffffff;
+pub fn generateCRC(buf: &[u8]) -> u32 {
+    let mut oldcrc: u32 = 0xffffffff;
     for value in buf {
         //
-        oldcrc = implt::crc_32_tab[(oldcrc as usize) ^ (*value as usize)] ^ (oldcrc >> 8);
+        oldcrc = implt::CRC_32_TAB[((oldcrc as usize) ^ (*value as usize)) & 0xff] ^ (oldcrc >> 8);
     }
     !oldcrc
 }
 
+
 mod implt {
     // hide implementation details from main file
     // DONT TOUCH THIS TABLE if you want to spend a touch time
-    pub const crc_32_tab: [i32; 256] = [// CRC polynomial 0xedb88320
+    pub const CRC_32_TAB: [u32; 256] = [// CRC polynomial 0xedb88320
                                         0x00000000,
                                         0x77073096,
                                         0xee0e612c,

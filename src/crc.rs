@@ -1,4 +1,4 @@
-pub fn generateCRC(buf: &[u8]) -> u32 {
+pub fn generate_crc32(buf: &[u8]) -> u32 {
     let mut oldcrc: u32 = 0xffffffff;
     for value in buf {
         //

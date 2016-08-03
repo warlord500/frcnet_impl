@@ -1,11 +1,13 @@
 mod controlStructs;
 mod crc;
+mod send;
 
 use std::net::{Ipv4Addr, UdpSocket, TcpListener, TcpStream};
 use std::mem::{size_of, transmute_copy, transmute};
 
-use controlStructs::{commonControlData2015, robotControl2015};
-use crc::generateCRC;
+use controlStructs::commonControlData2015;
+use crc::generate_crc32;
+use send::robotControl2015;
 
 /// this code is rewrite of frc network communcations
 /// library from Aardvark-Wpilib
@@ -53,9 +55,9 @@ impl frcNetImpl {
         println!("binded dsPort");
 
         let  robot_socket = UdpSocket::bind((ip, robo_port)).unwrap();
-        println!("before blocking");
         robot_socket.set_read_timeout(None).unwrap(); // always blocking
         println!("binded robotSocket");
+
         let enabled = true;
 
         while enabled {
@@ -64,7 +66,7 @@ impl frcNetImpl {
             match recv_msg {
                 Err(_) => {println!("packet read failed or different packet format"); }
                 Ok(tuple) => {
-                    let (size_msg,src) = tuple; // I dont how to do this with less chars!
+                    let (_,src) = tuple; //extract src of message
 
                     // convert data to packet format
                  //   let data_packet: controlStructs::commonControlData2015 =
@@ -79,8 +81,10 @@ impl frcNetImpl {
 
 
                     let crc = generate_crc32(&mut send_buf);
-                    send_buf[packet_size..packet_size+4].copy_from_slice(&unsafe 
-                                                                 {transmute::<u32,[u8; 4]>(crc) });
+                    send_buf[packet_size..packet_size+4].copy_from_slice(unsafe 
+                                                         {
+                                                         &transmute::<u32,[u8; 4]>(crc) 
+                                                         });
                     let _ = self.add_dynamic_chunks();
 
 
@@ -122,7 +126,6 @@ mod tests {
     }
     #[test]
     fn dyna_chunks(){
-        use super::*;
         let thread_local = super::frcNetImpl::new();
         assert_eq!(thread_local.add_dynamic_chunks(),1);
     }

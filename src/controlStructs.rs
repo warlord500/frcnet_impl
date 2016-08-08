@@ -1,4 +1,3 @@
-use std::mem::size_of;
 /// this the receive packet format
 #[repr(C)]
 pub struct commonControlData2015 {
@@ -10,14 +9,14 @@ pub struct commonControlData2015 {
 }
 impl commonControlData2015 {
     pub fn blankPack() -> Self {
-      let ret =  commonControlData2015 {
+        let ret = commonControlData2015 {
             packetIndex: 0,
             unknown: 0,
             state: 0,
             station: 0,
             joysticks: [implt::joystickData::new(); 4],
         };
-      ret
+        ret
 
     }
 }
@@ -53,9 +52,9 @@ mod implt {
                 unknown: 0,
                 buttons: 0,
                 pov: [0; 2],
-                pov_size:0,
+                pov_size: 0,
             }
         }
     }
-    impl Copy for joystickData{}
+    impl Copy for joystickData {}
 }

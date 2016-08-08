@@ -1,13 +1,9 @@
-mod controlStructs;
+mod out_packet;
 mod crc;
 mod send;
 
-use std::net::{Ipv4Addr, UdpSocket, TcpListener, TcpStream};
-use std::mem::{size_of, transmute_copy, transmute};
-
-use controlStructs::commonControlData2015;
-use crc::generate_crc32;
-use send::robotControl2015;
+use out_packet::commonControlData2015;
+use send::robot_control_2015;
 
 /// this code is rewrite of frc network communcations
 /// library from Aardvark-Wpilib
@@ -15,35 +11,33 @@ use send::robotControl2015;
 /// language. it is designed to be  simple and straight forwards as it can be.
 /// this library is designed to be use concepts  that can easily be translated to c++
 /// if neccessary.
-extern "C" fn start_thread(team_id: i32) {
-    let mut thread_info = frcNetImpl::new();
-    thread_info.execute_thread(team_id.clone());
-    println!("start_thread")
-
-}
-struct frcNetImpl {
+pub struct frcNetImpl {
     // lastDynamicPackets : [Vec<u8>; 32],
-    ctrl: robotControl2015,
-    last_data_packet: controlStructs::commonControlData2015, // dont use semaphores
+    ctrl: robot_control_2015,
+    last_data_packet: out_packet::commonControlData2015, // dont use semaphores
 }
 
 impl frcNetImpl {
-    fn new() -> Self {
+    pub fn new() -> Self {
         frcNetImpl {
             // lastDynamicPackets : [Vec::new(); 32],
-            ctrl: robotControl2015::new(),
+            ctrl: robot_control_2015::new(),
             last_data_packet: commonControlData2015::blankPack(),
         }
     }
 
 
     /// this is the main body of the library
+    /// it contains basic loop code for sending network packets. 
     pub fn execute_thread(&mut self, team_id: i32) {
+        use std::net::{Ipv4Addr, UdpSocket};
+        use std::mem::{size_of, transmute_copy, transmute};
+        use crc::generate_crc32;
+
         let team_id = team_id; //const param.
 
         // extract the ip of the robot
-        //let ip = Ipv4Addr::new(10, (team_id / 100) as u8, (team_id % 100) as u8, 0);
-        let ip = Ipv4Addr::new(127,0,0,1);
+        let ip = Ipv4Addr::new(10, (team_id / 100) as u8, (team_id % 100) as u8, 0);
         let port = 1110;
         let robo_port = 1105;
         let mut recv_buf = [0 as u8; 1024];
@@ -58,9 +52,8 @@ impl frcNetImpl {
         robot_socket.set_read_timeout(None).unwrap(); // always blocking
         println!("binded robotSocket");
 
-        let enabled = true;
 
-        while enabled {
+        loop {
             // read a message and echo it in reverse back
             let recv_msg =  ds_server.recv_from(&mut recv_buf);
             match recv_msg {
@@ -68,25 +61,20 @@ impl frcNetImpl {
                 Ok(tuple) => {
                     let (_,src) = tuple; //extract src of message
 
-                    // convert data to packet format
-                 //   let data_packet: controlStructs::commonControlData2015 =
-                  //      unsafe { transmute_copy(&send_buf) };
-                    // Self.readDynamicData(&mut buf);
-
+                    //convert latest packet to structure for analyzing
+                    self.last_data_packet = unsafe { transmute_copy(&send_buf) };
 
                     // create packet for send buffer.
-                    let send_packet = robotControl2015::generate(&mut self.ctrl);
-                    let packet_size = size_of::<robotControl2015>();
+                    let send_packet = robot_control_2015::generate(&mut self.ctrl);
+                    let packet_size = size_of::<robot_control_2015>();
                     send_packet.write_to_buf(&mut send_buf[0..packet_size]);
 
-
-                    let crc = generate_crc32(&mut send_buf);
-                    send_buf[packet_size..packet_size+4].copy_from_slice(unsafe 
-                                                         {
-                                                         &transmute::<u32,[u8; 4]>(crc) 
-                                                         });
-                    let _ = self.add_dynamic_chunks();
-
+                    let crc = generate_crc32(&send_buf);
+                    //write crc to buffer
+                    send_buf[packet_size..packet_size+4].copy_from_slice(
+                                        unsafe{
+                                                 &transmute::<u32,[u8; 4]>(crc) 
+                                        });
 
                     ds_server.send_to(&mut send_buf[0..(packet_size + 4)], src).unwrap();
                 }
@@ -94,39 +82,15 @@ impl frcNetImpl {
         }
     }
     
-    /// I am not sure what we do with dynamic data.
-    /// k
-    /// read the data into buffers and resend the data
-    /// I have no idea why I would send the dynamic chunks as
-    /// is
-    //   fn readDynamicData(&Self, buf :&mut [u8]) -> () {
-    // let mut curLoc : usize = std::mem::sizeOf::<commonControlData2015>();
-    // let mut sizeOfBlock = Self.last_data_packet.dynaSize;
-    // for packets in Self.lastDynamicPackets.into_iter() {
-    // packets.clear(); //empty vector
-    // packets.reserve(sizeOfBlock);
-    // packets.extend_from_slice(&buf[curLoc..sizeOfBlock]);
-    //
-    // curLoc += sizeOfBlock;
-    // sizeOfBlock =  buf[curLoc];
-    // }
-    // }
 
-     fn add_dynamic_chunks(&self) -> i32 {
-        // this is filler function
-        1
-    }
 }
 
 #[cfg(test)]
 mod tests {
-    #[test]
+    /*#[test]
     fn it_works() {
         super::start_thread(9999);
-    }
-    #[test]
-    fn dyna_chunks(){
-        let thread_local = super::frcNetImpl::new();
-        assert_eq!(thread_local.add_dynamic_chunks(),1);
-    }
+    } */
+
+
 }

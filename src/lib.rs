@@ -1,6 +1,7 @@
 mod out_packet;
 mod crc;
 mod send;
+mod interface;
 
 use out_packet::commonControlData2015;
 use send::robot_control_2015;
@@ -69,20 +70,19 @@ impl frcNetImpl {
                     let packet_size = size_of::<robot_control_2015>();
                     send_packet.write_to_buf(&mut send_buf[0..packet_size]);
 
-                    let crc = generate_crc32(&send_buf);
-                    //write crc to buffer
+
+                    let crc = generate_crc32(&send_buf);//write crc to buffer
                     send_buf[packet_size..packet_size+4].copy_from_slice(
                                         unsafe{
                                                  &transmute::<u32,[u8; 4]>(crc) 
                                         });
 
-                    ds_server.send_to(&mut send_buf[0..(packet_size + 4)], src).unwrap();
-                }
-            }
-        }
-    }
-    
 
+                    ds_server.send_to(&mut send_buf[0..(packet_size + 4)], src).unwrap();
+                } // end of Ok
+            } // end of match
+        } // end of loop
+    }
 }
 
 #[cfg(test)]
